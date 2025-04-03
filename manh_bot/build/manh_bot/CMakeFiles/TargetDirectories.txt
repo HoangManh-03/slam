@@ -1,0 +1,9 @@
+/home/hoangmanh/Final_Project/manh_bot/build/manh_bot/CMakeFiles/uninstall.dir
+/home/hoangmanh/Final_Project/manh_bot/build/manh_bot/CMakeFiles/manh_bot_uninstall.dir
+/home/hoangmanh/Final_Project/manh_bot/build/manh_bot/CMakeFiles/test.dir
+/home/hoangmanh/Final_Project/manh_bot/build/manh_bot/CMakeFiles/edit_cache.dir
+/home/hoangmanh/Final_Project/manh_bot/build/manh_bot/CMakeFiles/rebuild_cache.dir
+/home/hoangmanh/Final_Project/manh_bot/build/manh_bot/CMakeFiles/list_install_components.dir
+/home/hoangmanh/Final_Project/manh_bot/build/manh_bot/CMakeFiles/install.dir
+/home/hoangmanh/Final_Project/manh_bot/build/manh_bot/CMakeFiles/install/local.dir
+/home/hoangmanh/Final_Project/manh_bot/build/manh_bot/CMakeFiles/install/strip.dir

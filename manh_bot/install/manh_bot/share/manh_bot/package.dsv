@@ -1,0 +1,8 @@
+source;share/manh_bot/hook/cmake_prefix_path.ps1
+source;share/manh_bot/hook/cmake_prefix_path.dsv
+source;share/manh_bot/hook/cmake_prefix_path.sh
+source;share/manh_bot/local_setup.bash
+source;share/manh_bot/local_setup.dsv
+source;share/manh_bot/local_setup.ps1
+source;share/manh_bot/local_setup.sh
+source;share/manh_bot/local_setup.zsh
