@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <gazebo>
+        <plugin name="diff_drive" filename="libgazebo_ros_diff_drive.so">
+
+            <commandTopic>cmd_vel</commandTopic>
+            <odometryTopic>odom</odometryTopic>
+            <odometryFrame>odom</odometryFrame>
+            <odometrySource>world</odometrySource>
+            <publishOdomTF>true</publishOdomTF>
+            <robotBaseFrame>base_link</robotBaseFrame>
+            <publishWheelTF>true</publishWheelTF>
+            <publishTf>true</publishTf>
+            <publishWheelJointState>true</publishWheelJointState>
+            <legacyMode>false</legacyMode>
+            <updateRate>10</updateRate>
+            <leftJoint>left_wheel_joint</leftJoint>
+            <rightJoint>right_wheel_joint</rightJoint>
+            <wheelSeparation>0.35</wheelSeparation>
+            <wheelDiameter>0.1</wheelDiameter>
+            <wheelAcceleration>1</wheelAcceleration>
+            <wheelTorque>10</wheelTorque>
+            <rosDebugLevel>na</rosDebugLevel>
+        </plugin>
+    </gazebo>
+
+
+</robot>
+
+
+<!-- Wheel Information
+            <leftjoint>left_wheel_joint</leftjoint>
+            <rightjoint>right_wheel_joint</rightjoint>
+            <wheel_separation>0.35</wheel_separation>
+            <wheel_diameter>0.1</wheel_diameter>
+
+            <max_wheel_torque>200</max_wheel_torque>
+            <max_wheel_acceleration>10.0</max_wheel_acceleration>
+
+            <odometryTopic>odom</odometryTopic>
+            <odometryFrame>odom</odometryFrame>
+            <odometrySource>world</odometrySource>
+            <robot_base_frame>base_link</robot_base_frame>
+
+            <publish_odom>true</publish_odom>
+            <publish_odom_tf>true</publish_odom_tf>
+            <publish_wheel_tf>true</publish_wheel_tf> -->

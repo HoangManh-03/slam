@@ -1,0 +1,2 @@
+manh_bot
+-DCATKIN_DEVEL_PREFIX=/home/hoangmanh/final_project/slam/devel -DCMAKE_INSTALL_PREFIX=/home/hoangmanh/final_project/slam/install -DCATKIN_WHITELIST_PACKAGES=manh_bot -G Unix Makefiles

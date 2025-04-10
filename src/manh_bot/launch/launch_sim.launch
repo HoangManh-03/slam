@@ -1,0 +1,30 @@
+
+
+<launch>
+
+  <param name="robot_description" command="$(find xacro)/xacro --inorder $(find manh_bot)/description/robot_rgbd_cam.xacro" />
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find manh_bot)/worlds/only_wall.world"/>
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui" value="true"/>
+  </include>
+
+  <node name="spawn_robot" pkg="gazebo_ros" type="spawn_model" args="-urdf -model my_robot -param robot_description -x 0 -y 0 -z 0" />
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find manh_bot)/rviz/robot_rgbd_cam.rviz"/>
+
+  <remap from="/camera/color/camera_info" to="/camera/rgb/camera_info"/>
+  <remap from="/camera/color/image_raw" to="/camera/rgb/image_raw"/>
+  <remap from="/camera/depth/camera_info" to="/camera/depth/camera_info"/>
+  <remap from="/camera/depth/image_raw" to="/camera/depth/image_raw"/>
+  <remap from="/camera/infra1/camera_info" to="/camera/infra1/camera_info"/>
+  <remap from="/camera/infra1/image_raw" to="/camera/infra1/image_raw"/>
+  <remap from="/camera/infra2/camera_info" to="/camera/infra2/camera_info"/>
+  <remap from="/camera/infra2/image_raw" to="/camera/infra2/image_raw"/>
+  <remap from="/camera/depth/color/points" to="/camera/depth/color/points"/>
+
+</launch>
+
