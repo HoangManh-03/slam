@@ -24,7 +24,6 @@ catkin_package(
   DEPENDS GAZEBO
 )
 
-
 link_directories(${GAZEBO_LIBRARY_DIRS})
 
 include_directories(
