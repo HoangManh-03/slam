@@ -5,8 +5,9 @@ from std_msgs.msg import Float32MultiArray
 
 def talker():
     # pub = rospy.Publisher('pwm_commands', Float32MultiArray, queue_size=10)
-    pub = rospy.Publisher('reader', Float32MultiArray, queue_size=10)
     rospy.init_node('pwm_publisher', anonymous=True)
+    pub = rospy.Publisher('reader', Float32MultiArray, queue_size=10)
+    
     rate = rospy.Rate(0.5)  # Publish rate (Hz)
 
     while not rospy.is_shutdown():
