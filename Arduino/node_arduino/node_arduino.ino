@@ -23,7 +23,7 @@ ros::NodeHandle nh; // Khai báo node handle ở phạm vi toàn cục
 
 void robot_control(const std_msgs::Float32MultiArray& msg) {
   if (msg.data_length == 2) {
-     left = msg.data[0];
+     left = msg.data[0]-10;
      right = msg.data[1];
     chatter_msg.data_length = msg.data_length;
     chatter_msg.data[0] = left;
@@ -72,24 +72,24 @@ void loop() {
 //  left = -100;
 //  right = 50;
   // Điều khiển động cơ trái
-  if (left > 0) {
+  if (left >= 0) {
     digitalWrite(LEFT_MOTOR_IN1, 0); 
     digitalWrite(LEFT_MOTOR_IN2, 1);
     analogWrite(LEFT_MOTOR_IN2, left);
   }
-  else if(left < 0) {
+  else if(left <= 0) {
     digitalWrite(LEFT_MOTOR_IN1, 1); 
     digitalWrite(LEFT_MOTOR_IN2, 0);
     analogWrite(LEFT_MOTOR_IN1, abs(left));
   }
 
   // Điều khiển động cơ phải
-   if (right > 0) {
+   if (right >= 0) {
     digitalWrite(RIGHT_MOTOR_IN1, 0); 
     digitalWrite(RIGHT_MOTOR_IN2, 1);
     analogWrite(RIGHT_MOTOR_IN2, right);
   }
-  else if(right < 0) {
+  else if(right <= 0) {
     digitalWrite(RIGHT_MOTOR_IN1, 1); 
     digitalWrite(RIGHT_MOTOR_IN2, 0);
     analogWrite(RIGHT_MOTOR_IN1, abs(right));

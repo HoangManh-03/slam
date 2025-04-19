@@ -109,8 +109,7 @@ else:
     import tty
     import termios
 
-LINEAR_SPEED_PWM = 60
-ANGULAR_SPEED_PWM = 30
+SPEED_PWM = 100
 
 MSG = """
 Control Your Robot!
@@ -148,7 +147,6 @@ class TeleopKey(threading.Thread):
         self.condition = threading.Condition()
         self.done = False
         self.speed = 0
-
         if rate != 0.0:
             self.timeout = 1.0 / rate
         else:
@@ -167,14 +165,11 @@ class TeleopKey(threading.Thread):
         if rospy.is_shutdown():
             raise Exception("Got shutdown request before subscribers connected")
         
-    def update(self, left_pwm, right_pwm, linear_speed, angular_speed, key):
+    def update(self, left_pwm, right_pwm, speed):
         self.condition.acquire()
         self.left_pwm=left_pwm
         self.right_pwm=right_pwm
-        if key == 'i' or key == ',':
-            self.speed = linear_speed
-        elif key == 'j' or key == 'l':
-            self.speed= angular_speed
+        self.speed = speed
         
         # Notify publish thread that we have a new message.
         self.condition.notify()
@@ -182,7 +177,7 @@ class TeleopKey(threading.Thread):
 
     def stop(self):
         self.done = True
-        self.update(0,0,0,0,'')
+        self.update(0,0,0)
         self.join()
 
     def run(self):
@@ -225,8 +220,7 @@ if __name__ == '__main__':
 
     rospy.init_node('teleop_keyboard')
 
-    linear_speed = rospy.get_param("~linear_speed", LINEAR_SPEED_PWM)
-    angular_speed = rospy.get_param("~angular_speed", ANGULAR_SPEED_PWM)
+    speed = rospy.get_param("~speed", 100)
     repeat = rospy.get_param("~repeat_rate", 0.0)
     key_timeout = rospy.get_param("~key_timeout", 0.0)
     if key_timeout == 0.0:
@@ -240,8 +234,7 @@ if __name__ == '__main__':
 
     try:
         pub_thread.wait_for_subscribers()
-        key = ''
-        pub_thread.update(left_pwm,right_pwm,linear_speed, angular_speed, key)
+        pub_thread.update(left_pwm,right_pwm,speed)
 
         print(MSG)
         
@@ -261,7 +254,7 @@ if __name__ == '__main__':
                 if (key == '\x03'):
                     break
             
-            pub_thread.update(left_pwm, right_pwm, linear_speed, angular_speed, key)
+            pub_thread.update(left_pwm, right_pwm, speed)
 
     except Exception as e:
         print(e)
