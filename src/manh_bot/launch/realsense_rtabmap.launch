@@ -1,85 +1,37 @@
-<!-- <launch>
-  <arg name="open_rviz"     default="true"/>
-  <arg name="rtabmap_viz" default="true"/>
-  <arg name="camera"   default="camera"/>
-
-  <arg name="with_camera" default="true"/>
-  <arg name="localization" default="false"/>
-  <arg name="database_path" default="~/.ros/rtabmap.db"/>
-  <arg     if="$(arg localization)" name="rtabmap_args" default=""/>
-  <arg unless="$(arg localization)" name="rtabmap_args" default="-d"/>
-
-  <include file="$(find manh_bot)/launch/camera.launch">
-    <arg name="camera" value="$(arg camera)"/>
-  </include>
-
-  <group ns="rtabmap">
-
-  <node pkg="rtabmap_sync" type="rgbd_sync" name="rgbd_sync" output="screen">
-    <remap from="rgb/image"         to="/$(arg camera)/color/image_raw"/>
-    <remap from="depth/image"       to="/$(arg camera)/aligned_depth_to_color/image_raw"/>
-    <remap from="rgb/camera_info"   to="/$(arg camera)/color/camera_info"/>
-    <remap from="depth/camera_info" to="/$(arg camera)/aligned_depth_to_color/camera_info"/>
-    <remap from="rgbd_image"        to="rgbd_image"/>
-  </node>
-
-  <node name="rtabmap" pkg="rtabmap_slam" type="rtabmap" output="screen" args="$(arg rtabmap_args)">
-    <param name="frame_id" type="string" value="$(arg camera)_link"/>
-    <param name="subscribe_rgbd" type="bool" value="true"/>
-    <param name="approx_sync" type="bool" value="true"/>
-    <remap from="rgbd_image" to="rgbd_image"/> </node>
-
-  <node if="$(arg rtabmap_viz)" pkg="rtabmap_viz" type="rtabmap_viz" name="rtabmap_viz" output="screen">
-    <param name="approx_sync" type="bool" value="true"/>
-    <remap from="rgbd_image" to="rgbd_image"/> </node>
-  
-  </group>
-
-</launch> -->
-
 <launch>
-  <arg name="open_rviz"     default="true"/>
-  <arg name="rtabmap_viz" default="true"/>
-  <arg name="camera"   default="camera"/>
-
-  <arg name="with_camera" default="true"/>
-  <arg name="localization" default="false"/>
-  <arg name="database_path" default="~/.ros/rtabmap.db"/>
-  <arg     if="$(arg localization)" name="rtabmap_args" default=""/>
-  <arg unless="$(arg localization)" name="rtabmap_args" default="-d"/>
-  <arg name="odom_frame_id" default="odom"/>
-  <arg name="base_frame_id" default="$(arg camera)_link"/>
-
-  <include file="$(find manh_bot)/launch/camera.launch">
-    <arg name="camera" value="$(arg camera)"/>
+  <!-- Launch RealSense D435 camera -->
+  <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+    <arg name="align_depth"             value="true"/>
+    <arg name="enable_color"            value="true"/>
+    <arg name="enable_depth"            value="true"/>
+    <arg name="enable_infra1"           value="false"/>
+    <arg name="enable_infra2"           value="false"/>
+    <arg name="enable_gyro"             value="false"/>
+    <arg name="enable_accel"            value="false"/>
+    <arg name="enable_pointcloud"       value="false"/> <!-- tiết kiệm tài nguyên -->
+    <arg name="unite_imu_method"        value="none"/>
+    <arg name="color_width"             value="320"/>
+    <arg name="color_height"            value="240"/>
+    <arg name="depth_width"             value="320"/>
+    <arg name="depth_height"            value="240"/>
+    <arg name="color_fps"               value="15"/>
+    <arg name="depth_fps"               value="15"/>
   </include>
 
-  <group ns="rtabmap">
+  <include file="$(find rtabmap_launch)/launch/rtabmap.launch">
+    <arg name="rgb_topic" value="/camera/color/image_raw"/>
+    <arg name="depth_topic" value="/camera/aligned_depth_to_color/image_raw"/>
+    <arg name="camera_info_topic" value="/camera/color/camera_info"/>
 
-    <node pkg="rtabmap_ros" type="rgbd_odometry" name="rgbd_odometry" output="screen">
-      <param name="odom_frame_id"   value="$(arg odom_frame_id)"/>
-      <param name="base_frame_id"   value="$(arg base_frame_id)"/>
-      <param name="publish_tf"      value="true"/>
-      <remap from="rgb/image_raw"    to="/$(arg camera)/color/image_raw"/>
-      <remap from="depth/image_raw"  to="/$(arg camera)/aligned_depth_to_color/image_raw"/>
-      <remap from="rgb/camera_info"  to="/$(arg camera)/color/camera_info"/>
-      <remap from="depth/camera_info" to="/$(arg camera)/aligned_depth_to_color/camera_info"/>
-    </node>
-
-    <node name="rtabmap" pkg="rtabmap_ros" type="rtabmap" output="screen" args="$(arg rtabmap_args)">
-      <param name="frame_id" type="string" value="$(arg base_frame_id)"/>
-      <param name="subscribe_rgbd" type="bool" value="true"/>
-      <param name="approx_sync" type="bool" value="true"/>
-      <remap from="rgbd_image" to="rgbd_image"/>
-      <remap from="odom" to="rgbd_odometry/odom"/>
-    </node>
-
-    <node if="$(arg rtabmap_viz)" pkg="rtabmap_viz" type="rtabmap_viz" name="rtabmap_viz" output="screen">
-      <param name="approx_sync" type="bool" value="true"/>
-      <remap from="rgbd_image" to="rgbd_image"/>
-      <remap from="odom" to="rgbd_odometry/odom"/>
-    </node>
-
-  </group>
-
+  </include>
+  <!-- Optional: rtabmapviz GUI nếu cần -->
+  <!-- Uncomment nếu muốn mở GUI -->
+<!--   
+  <node name="rtabmapviz" pkg="rtabmap_ros" type="rtabmapviz" output="screen">
+    <param name="frame_id" value="base_link"/>
+    <remap from="rgb/image" to="/camera/color/image_raw"/>
+    <remap from="depth/image" to="/camera/aligned_depth_to_color/image_raw"/>
+    <remap from="rgb/camera_info" to="/camera/color/camera_info"/>
+  </node> -->
+ 
 </launch>

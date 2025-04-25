@@ -3,17 +3,17 @@
 
     <xacro:include filename="robot_core.xacro" />
 
-    <xacro:include filename="gazebo_control.xacro" />
+    <!-- <xacro:include filename="gazebo_control.xacro" /> -->
     
     <!-- <xacro:include filename="camera.xacro" /> -->
 
     <!-- <xacro:include filename="depth_camera.xacro" /> -->
 
-    <xacro:include filename="$(find manh_bot)/realsense_d435/_d435.urdf.xacro" />
+    <!-- <xacro:include filename="$(find manh_bot)/realsense_d435/_d435.urdf.xacro" /> -->
 
-    <xacro:sensor_d435 name="camera" topics_ns="camera" parent="chassis" publish_pointcloud="true">
+    <!-- <xacro:sensor_d435 name="camera" topics_ns="camera" parent="chassis" publish_pointcloud="true">
         <origin xyz="0.305 0 0.08" rpy="0 0 0"/>
-    </xacro:sensor_d435>
+    </xacro:sensor_d435> -->
     
     
 </robot>

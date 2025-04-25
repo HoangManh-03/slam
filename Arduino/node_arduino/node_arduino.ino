@@ -3,10 +3,12 @@
 #include <std_msgs/Float32MultiArray.h>
 
 // Cấu hình chân động cơ
+const int enA = 9;
+const int enB = 10;
 const int LEFT_MOTOR_IN1 = 6;   // Chân PWM cho động cơ trái
-const int LEFT_MOTOR_IN2 = 7;   // Chân điều khiển chiều động cơ trái
-const int RIGHT_MOTOR_IN1 = 5;  // Chân PWM cho động cơ phải
-const int RIGHT_MOTOR_IN2 = 4;  // Chân điều khiển chiều động cơ phải
+const int LEFT_MOTOR_IN2 = 5;   // Chân điều khiển chiều động cơ trái
+const int RIGHT_MOTOR_IN1 = 7;  // Chân PWM cho động cơ phải
+const int RIGHT_MOTOR_IN2 = 8;  // Chân điều khiển chiều động cơ phải
 
 // Cấu hình tốc độ tối đa
 int MAX_PWM = 0;   // Giá trị PWM tối đa (0-255)
@@ -23,7 +25,7 @@ ros::NodeHandle nh; // Khai báo node handle ở phạm vi toàn cục
 
 void robot_control(const std_msgs::Float32MultiArray& msg) {
   if (msg.data_length == 2) {
-     left = msg.data[0]-10;
+     left = msg.data[0];
      right = msg.data[1];
     chatter_msg.data_length = msg.data_length;
     chatter_msg.data[0] = left;
@@ -36,7 +38,6 @@ void robot_control(const std_msgs::Float32MultiArray& msg) {
     Serial.println(left);
     Serial.print("🚀 Tốc độ bánh phải (Right): ");
     Serial.println(right);
-
     
   }
 }
@@ -51,12 +52,16 @@ void setup() {
   pinMode(LEFT_MOTOR_IN2, OUTPUT);
   pinMode(RIGHT_MOTOR_IN1, OUTPUT);
   pinMode(RIGHT_MOTOR_IN2, OUTPUT);
+  pinMode(enA, OUTPUT);
+  pinMode(enB, OUTPUT);
 
   // Cài đặt giá trị ban đầu cho chân điều khiển (dừng động cơ)
   digitalWrite(LEFT_MOTOR_IN1, LOW);
   digitalWrite(LEFT_MOTOR_IN2, LOW);
   digitalWrite(RIGHT_MOTOR_IN1, LOW);
   digitalWrite(RIGHT_MOTOR_IN2, LOW);
+  analogWrite(enA, 0);
+  analogWrite(enB, 0);
 
   Serial.println("🚀 Arduino Mega đã sẵn sàng!");
 
@@ -69,29 +74,29 @@ void setup() {
 void loop() {
   nh.spinOnce();
   delay(1); // Thời gian chờ nhỏ để duy trì giao tiếp ROS
-//  left = -100;
-//  right = 50;
+//  left = 0;
+//  right = 0;
   // Điều khiển động cơ trái
   if (left >= 0) {
     digitalWrite(LEFT_MOTOR_IN1, 0); 
     digitalWrite(LEFT_MOTOR_IN2, 1);
-    analogWrite(LEFT_MOTOR_IN2, left);
+    analogWrite(enA, left);
   }
   else if(left <= 0) {
     digitalWrite(LEFT_MOTOR_IN1, 1); 
     digitalWrite(LEFT_MOTOR_IN2, 0);
-    analogWrite(LEFT_MOTOR_IN1, abs(left));
+    analogWrite(enA, abs(left));
   }
 
   // Điều khiển động cơ phải
    if (right >= 0) {
     digitalWrite(RIGHT_MOTOR_IN1, 0); 
     digitalWrite(RIGHT_MOTOR_IN2, 1);
-    analogWrite(RIGHT_MOTOR_IN2, right);
+    analogWrite(enB, right);
   }
   else if(right <= 0) {
     digitalWrite(RIGHT_MOTOR_IN1, 1); 
     digitalWrite(RIGHT_MOTOR_IN2, 0);
-    analogWrite(RIGHT_MOTOR_IN1, abs(right));
+    analogWrite(enB, abs(right));
   }
 }
