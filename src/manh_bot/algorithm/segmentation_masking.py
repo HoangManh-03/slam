@@ -1,0 +1,221 @@
+import torch
+import numpy as np
+import cv2
+from torchvision import models, transforms
+import pyrealsense2 as rs
+import rospy
+from sensor_msgs.msg import Image, CameraInfo
+import tf
+from cv_bridge import CvBridge
+
+class Segmentation:
+    def __init__(self):
+        # Publishers
+        rospy.init_node('Segmentation_node', anonymous=True)
+
+
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.net = models.segmentation.deeplabv3_mobilenet_v3_large(pretrained=True).eval().to(self.device)
+        self.transform = transforms.Compose([
+                        transforms.ToPILImage(),
+                        transforms.Resize((480, 640)),
+                        transforms.ToTensor(),
+                        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                            std=[0.229, 0.224, 0.225]),
+                    ])
+
+        # Topics
+        self.rgb_topic = rospy.get_param('~rgb_topic', '/camera/color/image_raw')
+        self.depth_topic = rospy.get_param('~depth_topic', '/camera/depth/image_rect_raw')
+        self.rgb_info_topic = rospy.get_param('~rgb_info_topic', '/camera/color/camera_info')
+        self.depth_info_topic = rospy.get_param('~depth_info_topic', '/camera/depth/camera_info')
+        self.aligned_depth_topic = rospy.get_param('~aligned_depth_topic', '/camera/aligned_depth_to_color/image_raw')
+        self.masked_rgb_topic = rospy.get_param('~masked_rgb_topic', '/camera/color/image_masked') # New topic for masked image
+
+        # Publishers
+        self.rgb_pub = rospy.Publisher(self.rgb_topic, Image, queue_size=10)
+        self.depth_pub = rospy.Publisher(self.depth_topic, Image, queue_size=10)
+        self.rgb_info_pub = rospy.Publisher(self.rgb_info_topic, CameraInfo, queue_size=10)
+        self.depth_info_pub = rospy.Publisher(self.depth_info_topic, CameraInfo, queue_size=10)
+        self.aligned_depth_pub = rospy.Publisher(self.aligned_depth_topic, Image, queue_size=10)
+        self.masked_rgb_pub = rospy.Publisher(self.masked_rgb_topic, Image, queue_size=10) # Publisher for masked image
+
+        # RealSense
+        self.pipeline = rs.pipeline()
+        self.config = rs.config()
+        self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+        self.config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
+        self.align = rs.align(rs.stream.color)
+
+        self.bridge = CvBridge()
+        self.broadcaster = tf.TransformBroadcaster()
+
+        # Camera Info
+        self.rgb_info = CameraInfo(
+            width=640, height=480,
+            K=[615.8276977539062, 0.0, 321.8806457519531,
+               0.0, 615.6688232421875, 240.3068389892578,
+               0.0, 0.0, 1.0],
+            P=[615.8276977539062, 0.0, 321.8806457519531, 0.0,
+               0.0, 615.6688232421875, 240.3068389892578, 0.0,
+               0.0, 0.0, 1.0, 0.0],
+            D=[0.0, 0.0, 0.0, 0.0, 0.0],
+            distortion_model='plumb_bob'
+        )
+        self.rgb_info.header.frame_id = "camera_color_optical_frame"
+
+        self.depth_info = CameraInfo(
+            width=848, height=480,
+            K=[424.46441650390625, 0.0, 423.5723571777344,
+               0.0, 424.46441650390625, 239.52735900878906,
+               0.0, 0.0, 1.0],
+            P=[424.46441650390625, 0.0, 423.5723571777344, 0.0,
+               0.0, 424.46441650390625, 239.52735900878906, 0.0,
+               0.0, 0.0, 1.0, 0.0],
+            D=[0.0, 0.0, 0.0, 0.0, 0.0],
+            distortion_model='plumb_bob'
+        )
+        self.depth_info.header.frame_id = "camera_depth_optical_frame"
+
+        try:
+            self.pipeline.start(self.config)
+            rospy.loginfo("Realsense D435 camera started.")
+        except rs.error as e:
+            rospy.logerr(f"Failed to start Realsense: {e}")
+            rospy.signal_shutdown("Camera error")
+
+    def publish_transforms(self):
+        now = rospy.Time.now()
+
+        # Publish static transform camera_link → camera_color_frame (no rotation)
+        self.broadcaster.sendTransform(
+            (0, 0, 0),
+            (0, 0, 0, 1),
+            now,
+            "camera_color_frame",
+            "camera_link"
+        )
+
+        # Publish static transform camera_color_frame → camera_color_optical_frame (rotate -90 deg X, -90 deg Z)
+        quat_optical = tf.transformations.quaternion_from_euler(-np.pi/2, 0, -np.pi/2)
+        self.broadcaster.sendTransform(
+            (0, 0, 0),
+            quat_optical,
+            now,
+            "camera_color_optical_frame",
+            "camera_color_frame"
+        )
+
+        # Publish static transform camera_link → camera_depth_frame
+        self.broadcaster.sendTransform(
+            (0, 0, 0),
+            (0, 0, 0, 1),
+            now,
+            "camera_depth_frame",
+            "camera_link"
+        )
+
+        # Publish static transform camera_depth_frame → camera_depth_optical_frame
+        self.broadcaster.sendTransform(
+            (0, 0, 0),
+            quat_optical,
+            now,
+            "camera_depth_optical_frame",
+            "camera_depth_frame"
+        )
+
+    def process_segmentation(self, color_image):
+        input_tensor = self.transform(color_image).unsqueeze(0).to(self.device)
+        with torch.no_grad():
+            output = self.net(input_tensor)['out']
+            pred = torch.argmax(output.squeeze(), dim=0).cpu().numpy()
+        return (pred == 15) # Return boolean mask for 'person'
+
+    def apply_mask_expansion(self, color_image, mask_person):
+        masked_image = color_image.copy()
+        mask_expanded = mask_person.astype(np.uint8) * 255
+
+        # Mở rộng mask
+        kernel_dilate = np.ones((10, 10), np.uint8)
+        mask_dilated = cv2.dilate(mask_expanded, kernel_dilate, iterations=2)
+        mask_bool_dilated = mask_dilated > 128
+
+        # Đặt vùng đã giãn nở thành màu đen
+        masked_image[mask_bool_dilated] = [0, 0, 0]
+
+        return masked_image
+
+    def publish_data(self):
+        frames = self.pipeline.wait_for_frames()
+        color_frame = frames.get_color_frame()
+        depth_frame = frames.get_depth_frame()
+        aligned_frames = self.align.process(frames)
+        aligned_depth_frame = aligned_frames.get_depth_frame()
+
+        if not color_frame or not depth_frame:
+            return
+
+        now = rospy.Time.now()
+
+        # Color image
+        color_image = np.asanyarray(color_frame.get_data())
+
+        # Semantic segmentation
+        mask_person = self.process_segmentation(color_image)
+
+        # Apply mask expansion
+        masked_rgb_image = self.apply_mask_expansion(color_image, mask_person)
+
+        # Publish original RGB image
+        rgb_msg = self.bridge.cv2_to_imgmsg(color_image, encoding="bgr8")
+        rgb_msg.header.stamp = now
+        rgb_msg.header.frame_id = "camera_color_optical_frame"
+        self.rgb_pub.publish(rgb_msg)
+
+        # Publish masked RGB image
+        masked_rgb_msg = self.bridge.cv2_to_imgmsg(masked_rgb_image, encoding="bgr8")
+        masked_rgb_msg.header.stamp = now
+        masked_rgb_msg.header.frame_id = "camera_color_optical_frame"
+        self.masked_rgb_pub.publish(masked_rgb_msg)
+
+        # Depth image
+        depth_image = np.asanyarray(depth_frame.get_data())
+        depth_msg = self.bridge.cv2_to_imgmsg(depth_image, encoding="16UC1")
+        depth_msg.header.stamp = now
+        depth_msg.header.frame_id = "camera_depth_optical_frame"
+        self.depth_pub.publish(depth_msg)
+
+        # Aligned depth
+        aligned_depth_image = np.asanyarray(aligned_depth_frame.get_data())
+        aligned_depth_msg = self.bridge.cv2_to_imgmsg(aligned_depth_image, encoding="16UC1")
+        aligned_depth_msg.header.stamp = now
+        aligned_depth_msg.header.frame_id = "camera_color_optical_frame"
+        self.aligned_depth_pub.publish(aligned_depth_msg)
+
+        # Camera Info
+        self.rgb_info.header.stamp = now
+        self.rgb_info_pub.publish(self.rgb_info)
+
+        self.depth_info.header.stamp = now
+        self.depth_info_pub.publish(self.depth_info)
+
+        # Publish TFs
+        self.publish_transforms()
+
+    def run(self):
+        rate = rospy.Rate(10)
+        while not rospy.is_shutdown():
+            self.publish_data()
+            rate.sleep()
+
+    def on_shutdown(self):
+        rospy.loginfo("Shutting down Realsense Publisher.")
+        self.pipeline.stop()
+
+if __name__ == '__main__':
+    try:
+        publisher = Segmentation()
+        rospy.on_shutdown(publisher.on_shutdown)
+        publisher.run()
+    except rospy.ROSInterruptException:
+        pass

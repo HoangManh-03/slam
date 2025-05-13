@@ -13,8 +13,8 @@ else:
     import tty
     import termios
 
-LINEAR_SPEED_PWM = 100
-ANGULAR_SPEED_PWM = 50
+LINEAR_SPEED_PWM = 60
+ANGULAR_SPEED_PWM = 70
 
 MSG = """
 Control Your Robot!
@@ -44,7 +44,7 @@ class TeleopKey(threading.Thread):
     def __init__(self, rate):
         super(TeleopKey, self).__init__()
 
-        self.pub = rospy.Publisher('reader', Float32MultiArray, queue_size=10)
+        self.pub = rospy.Publisher('robot_control', Float32MultiArray, queue_size=10)
         # self.pwm_msg = Float32MultiArray()
         self.rate = rospy.Rate(0.5)  # Publish rate (Hz)
         self.left_pwm = 0

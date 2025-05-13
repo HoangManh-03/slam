@@ -154,7 +154,7 @@ class RealsensePublisher:
         self.publish_transforms()
 
     def run(self):
-        rate = rospy.Rate(30)
+        rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             self.publish_data()
             rate.sleep()

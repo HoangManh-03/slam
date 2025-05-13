@@ -5,11 +5,10 @@
 // Cấu hình chân động cơ
 const int enA = 9;
 const int enB = 10;
-const int LEFT_MOTOR_IN1 = 6;   // Chân PWM cho động cơ trái
-const int LEFT_MOTOR_IN2 = 5;   // Chân điều khiển chiều động cơ trái
-const int RIGHT_MOTOR_IN1 = 7;  // Chân PWM cho động cơ phải
-const int RIGHT_MOTOR_IN2 = 8;  // Chân điều khiển chiều động cơ phải
-
+const int LEFT_MOTOR_IN1 = 6;  
+const int LEFT_MOTOR_IN2 = 5;  
+const int RIGHT_MOTOR_IN1 = 7;  
+const int RIGHT_MOTOR_IN2 = 8; 
 // Cấu hình tốc độ tối đa
 int MAX_PWM = 0;   // Giá trị PWM tối đa (0-255)
 
@@ -19,7 +18,7 @@ float right = 0;
 
 
 std_msgs::Float32MultiArray chatter_msg;
-ros::Publisher chatter("chatter", &chatter_msg);
+ros::Publisher control_robot("chatter", &chatter_msg);
 
 ros::NodeHandle nh; // Khai báo node handle ở phạm vi toàn cục
 
@@ -30,10 +29,8 @@ void robot_control(const std_msgs::Float32MultiArray& msg) {
     chatter_msg.data_length = msg.data_length;
     chatter_msg.data[0] = left;
     chatter_msg.data[1] = right;
-//    for (int i = 0; i < msg.data_length; ++i) {
-//      chatter_msg.data[i] = msg.data[i]; // Assuming chatter_msg.data is an array large enough
-//    }
-    chatter.publish(&chatter_msg);
+
+    control_robot.publish(&chatter_msg);
     Serial.print("🚀 Tốc độ bánh trái (Left): ");
     Serial.println(left);
     Serial.print("🚀 Tốc độ bánh phải (Right): ");
@@ -66,14 +63,14 @@ void setup() {
   Serial.println("🚀 Arduino Mega đã sẵn sàng!");
 
   nh.initNode();
-  nh.subscribe(robot_control_sub); //
-  nh.advertise(chatter);
+  nh.subscribe(robot_control_sub); 
+  nh.advertise(control_robot);
 }
 
 // Hàm chính
 void loop() {
   nh.spinOnce();
-  delay(1); // Thời gian chờ nhỏ để duy trì giao tiếp ROS
+  delay(10); // Thời gian chờ nhỏ để duy trì giao tiếp ROS
 //  left = 0;
 //  right = 0;
   // Điều khiển động cơ trái
